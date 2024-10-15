@@ -57,18 +57,21 @@ impl Record {
         let start = Instant::now();
         {
             Command::new("wget")
-                .args(["-O", "/dev/null", "http://speedtest.tele2.net/100MB.zip"])
+                .args(["http://speedtest.tele2.net/100MB.zip"])
                 .output()
                 .unwrap();
         }
-        (100 * 8 * 1_000 / start.elapsed().as_millis()) as f32
+        let elapsed_micros = (start.elapsed().as_micros() - 500_000) as f64;
+        println!("Elapsed: {}", elapsed_micros);
+        let bits = (100.0 * 8.0 * 1_000_000.0) as f64; // 100 MB in bits
+        (bits / elapsed_micros) as f32 // This gives the result in Mbps
     }
 
     /// Upload a 500 MB file, should take 10 seconds.
     fn upload_speed() -> f32 {
         let start = Instant::now();
         {
-            Command::new("curl")
+            let output = Command::new("curl")
                 .args([
                     "-T",
                     "100MB.zip",
@@ -77,8 +80,17 @@ impl Record {
                     "/dev/null",
                 ])
                 .output()
-                .unwrap();
+                .unwrap()
+                .status;
+            println!("{}", output);
+
+            // Clean up
+            Command::new("rm").args(["100MB.zip"]).output().unwrap();
         }
-        (100 * 8 * 1_000 / start.elapsed().as_millis()) as f32
+
+        let elapsed_micros = (start.elapsed().as_micros() - 500_000) as f64; // Substract one second for the
+        println!("Elapsed: {}", elapsed_micros);
+        let bits = 100.0 * 8.0 * 1_000_000.0; // 100 MB in bits
+        (bits / elapsed_micros) as f32 // This gives the result in Mbps
     }
 }
